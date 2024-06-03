@@ -1,18 +1,10 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
-const cors = require("cors");
-require("dotenv").config();
-
 const app = express();
 const Person = require("./models/person");
 
-app.use(cors());
 app.use(express.static("dist"));
-
-const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: "unknown endpoint" });
-};
-
 app.use(express.json());
 
 app.use(
@@ -29,6 +21,13 @@ app.use(
     ].join(" ");
   })
 );
+
+const cors = require("cors");
+app.use(cors());
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: "unknown endpoint" });
+};
 
 const date = new Date();
 
@@ -63,15 +62,12 @@ app.get("/info", (req, res) => {
 
 app.post("/api/persons", (req, res) => {
   const body = req.body;
+
   if (!body.name) {
     return res.status(400).json({ error: `name missing` });
   }
   if (!body.number) {
     return res.status(400).json({ error: `number missing` });
-  }
-
-  if (Person.map((person) => person.name).includes(body.name)) {
-    return res.status(400).json({ error: `name must be unique` });
   }
 
   const person = new Person({
@@ -80,7 +76,7 @@ app.post("/api/persons", (req, res) => {
   });
 
   person.save().then((savePerson) => {
-    response.json(savePerson);
+    res.json(savePerson);
   });
 });
 
@@ -88,6 +84,15 @@ app.delete("/api/persons/:id", (req, res) => {
   Person.findByIdAndDelete(req.params.id).then((person) => {
     res.status(204).end();
   });
+});
+
+app.put("/api/persons/:id", (req, res) => {
+  const { name, number } = req.body;
+  Person.findByIdAndUpdate(req.params.id, { name, number }).then(
+    (updatePerson) => {
+      res.json(updatePerson);
+    }
+  );
 });
 
 app.use(unknownEndpoint);
